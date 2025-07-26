@@ -1,30 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:project_tracker/app/theme/app_theme.dart';
-import 'package:project_tracker/app/routes/app_routes.dart';
-import 'package:project_tracker/services/storage_service.dart';
+
+import 'app/theme/app_theme.dart';
+import 'app/data/services/hive_service.dart';
+import 'app/controllers/app_controller.dart';
+import 'app/controllers/ideas_controller.dart';
+import 'app/controllers/projects_controller.dart';
+import 'app/controllers/tasks_controller.dart';
+import 'app/screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize storage
-  await StorageService.init();
+  // Initialize Hive
+  await HiveService.init();
 
-  runApp(const MyApp());
+  // Register controllers
+  Get.put(AppController());
+  Get.put(IdeasController());
+  Get.put(ProjectsController());
+  Get.put(TasksController());
+
+  runApp(const BuildTrackApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BuildTrackApp extends StatelessWidget {
+  const BuildTrackApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Project Tracker',
+      title: 'BuildTrack',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      initialRoute: AppRoutes.home,
-      getPages: AppRoutes.pages,
       defaultTransition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+      home: const MainScreen(),
     );
   }
 }
