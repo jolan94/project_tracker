@@ -23,6 +23,13 @@ class TasksController extends GetxController {
   final RxString _sortBy = 'createdAt'.obs;
   final RxBool _sortAscending = false.obs;
   final RxBool _showCompletedTasks = true.obs;
+  
+  // Filter/Sort state for widget
+  final RxMap<String, dynamic> _currentFilters = <String, dynamic>{}.obs;
+  final RxMap<String, dynamic> _currentSort = <String, dynamic>{
+    'field': 'createdAt',
+    'direction': 'desc'
+  }.obs;
 
   // Getters
   List<Task> get tasks => _tasks;
@@ -36,6 +43,8 @@ class TasksController extends GetxController {
   String get sortBy => _sortBy.value;
   bool get sortAscending => _sortAscending.value;
   bool get showCompletedTasks => _showCompletedTasks.value;
+  Map<String, dynamic> get currentFilters => _currentFilters;
+  Map<String, dynamic> get currentSort => _currentSort;
 
   @override
   void onInit() {
@@ -162,6 +171,28 @@ class TasksController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to complete task: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> updateTaskStatus(String id, TaskStatus newStatus) async {
+    try {
+      final task = _tasks.firstWhere((t) => t.id == id);
+      final updatedTask = task.copyWith(
+        status: newStatus,
+        startedAt: newStatus == TaskStatus.inProgress && task.startedAt == null 
+            ? DateTime.now() 
+            : task.startedAt,
+        completedAt: newStatus == TaskStatus.done 
+            ? DateTime.now() 
+            : null,
+      );
+      await updateTask(updatedTask);
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to update task status: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -383,5 +414,28 @@ class TasksController extends GetxController {
     } catch (e) {
       return null;
     }
+  }
+  
+  void updateFiltersAndSort(Map<String, dynamic> data) {
+    final filters = data['filters'] as Map<String, dynamic>? ?? {};
+    final sort = data['sort'] as Map<String, dynamic>? ?? {};
+    
+    _currentFilters.assignAll(filters);
+    _currentSort.assignAll(sort);
+    
+    // Update individual filter values
+    _statusFilter.value = filters['status'];
+    _priorityFilter.value = filters['priority'];
+    _projectFilter.value = filters['project'] ?? '';
+    
+    // Update sort values
+    _sortBy.value = sort['field'] ?? 'createdAt';
+    _sortAscending.value = sort['direction'] == 'asc';
+    
+    _applyFilters();
+  }
+  
+  void showFilterDialog() {
+    // This will be called from the UI to show the filter dialog
   }
 }

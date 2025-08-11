@@ -15,22 +15,11 @@ class DashboardScreen extends StatelessWidget {
     final ideasController = Get.find<IdeasController>();
     final projectsController = Get.find<ProjectsController>();
     final tasksController = Get.find<TasksController>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ideasController.loadIdeas();
-              projectsController.loadProjects();
-              tasksController.loadTasks();
-            },
-          ),
-        ],
-      ),
+      backgroundColor: colorScheme.surface,
       body: RefreshIndicator(
         onRefresh: () async {
           await Future.wait([
@@ -39,19 +28,61 @@ class DashboardScreen extends StatelessWidget {
             tasksController.loadTasks(),
           ]);
         },
+        color: colorScheme.primary,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Quick Stats
-              Text(
-                'Overview',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+              // Welcome Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.only(bottom: 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary.withOpacity(0.1),
+                      colorScheme.secondary.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back!',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Track your ideas, manage projects, and achieve your goals.',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
+
+              // Overview Section
+              _SectionHeader(
+                title: 'Overview',
+                subtitle: 'Your progress at a glance',
+                theme: theme,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(height: 20),
               Obx(() {
                 final ideaStats = ideasController.getIdeaStats();
                 final projectStats = projectsController.getProjectStats();
@@ -63,106 +94,134 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 1.2,
+                  childAspectRatio: 1.1,
                   children: [
                     StatCard(
                       title: 'Ideas',
                       value: ideaStats['total'].toString(),
                       subtitle: '${ideaStats['validated']} validated',
-                      icon: Icons.lightbulb,
-                      color: Colors.amber,
+                      icon: Icons.lightbulb_outline,
+                      color: Colors.amber.shade600,
                     ),
                     StatCard(
                       title: 'Projects',
                       value: projectStats['total'].toString(),
                       subtitle: '${projectStats['active']} active',
-                      icon: Icons.work,
-                      color: Colors.blue,
+                      icon: Icons.work_outline,
+                      color: Colors.blue.shade600,
                     ),
                     StatCard(
                       title: 'Tasks',
                       value: taskStats['total'].toString(),
                       subtitle: '${taskStats['done']} completed',
-                      icon: Icons.task,
-                      color: Colors.green,
+                      icon: Icons.task_outlined,
+                      color: Colors.green.shade600,
                     ),
                     StatCard(
                       title: 'Revenue',
                       value: '\$${projectStats['totalRevenue'].toStringAsFixed(0)}',
                       subtitle: 'Monthly',
                       icon: Icons.attach_money,
-                      color: Colors.purple,
+                      color: Colors.purple.shade600,
                     ),
                   ],
                 );
               }),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-              // Quick Actions
-              Text(
-                'Quick Actions',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Quick Actions Section
+              _SectionHeader(
+                title: 'Quick Actions',
+                subtitle: 'Create new content quickly',
+                theme: theme,
+                colorScheme: colorScheme,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const QuickActions(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-              // Recent Items
-              Text(
-                'Recent Activity',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // Recent Activity Section
+              _SectionHeader(
+                title: 'Recent Activity',
+                subtitle: 'Your latest updates',
+                theme: theme,
+                colorScheme: colorScheme,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Obx(() {
                 final recentIdeas = ideasController.getRecentIdeas(limit: 3);
                 final recentProjects = projectsController.getRecentProjects(limit: 3);
                 final recentTasks = tasksController.getRecentTasks(limit: 3);
 
-                return Column(
-                  children: [
-                    if (recentIdeas.isNotEmpty)
-                      RecentItemsList(
-                        title: 'Recent Ideas',
-                        items: recentIdeas.map((idea) => {
-                          'title': idea.title,
-                          'subtitle': idea.description,
-                          'trailing': idea.priority.name,
-                          'onTap': () => Get.toNamed('/idea-detail', arguments: idea.id),
-                        }).toList(),
-                      ),
-                    const SizedBox(height: 16),
-                    if (recentProjects.isNotEmpty)
-                      RecentItemsList(
-                        title: 'Recent Projects',
-                        items: recentProjects.map((project) => {
-                          'title': project.title,
-                          'subtitle': project.description,
-                          'trailing': '${(project.progress * 100).toInt()}%',
-                          'onTap': () => Get.toNamed('/project-detail', arguments: project.id),
-                        }).toList(),
-                      ),
-                    const SizedBox(height: 16),
-                    if (recentTasks.isNotEmpty)
-                      RecentItemsList(
-                        title: 'Recent Tasks',
-                        items: recentTasks.map((task) => {
-                          'title': task.title,
-                          'subtitle': task.description,
-                          'trailing': task.status.name,
-                          'onTap': () => Get.toNamed('/task-detail', arguments: task.id),
-                        }).toList(),
-                      ),
-                  ],
+                final recentItems = <Map<String, dynamic>>[
+                  ...recentIdeas.map((idea) => {
+                    'title': idea.title,
+                    'subtitle': 'Idea • ${idea.description}',
+                    'trailing': idea.priority.name.toUpperCase(),
+                    'onTap': () => Get.toNamed('/idea-detail', arguments: idea.id),
+                  }),
+                  ...recentProjects.map((project) => {
+                    'title': project.title,
+                    'subtitle': 'Project • ${project.description}',
+                    'trailing': '${(project.progress * 100).toInt()}%',
+                    'onTap': () => Get.toNamed('/project-detail', arguments: project.id),
+                  }),
+                  ...recentTasks.map((task) => {
+                    'title': task.title,
+                    'subtitle': 'Task • ${task.description}',
+                    'trailing': task.status.name.toUpperCase(),
+                    'onTap': () => Get.toNamed('/task-detail', arguments: task.id),
+                  }),
+                ];
+
+                return RecentItemsList(
+                  title: '',
+                  items: recentItems.take(5).toList(),
                 );
               }),
+              const SizedBox(height: 32),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.theme,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurface.withOpacity(0.6),
+            height: 1.3,
+          ),
+        ),
+      ],
     );
   }
 }

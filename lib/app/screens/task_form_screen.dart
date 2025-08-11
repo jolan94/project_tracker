@@ -20,21 +20,23 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   final _descriptionController = TextEditingController();
   final _tagsController = TextEditingController();
 
-
   TaskStatus _selectedStatus = TaskStatus.todo;
   TaskPriority _selectedPriority = TaskPriority.medium;
-  String? _selectedProjectId;
   DateTime? _selectedDueDate;
+  String? _selectedProjectId;
   bool _isLoading = false;
-  
-  // Slider value
-  double _estimatedHours = 1.0;
 
   @override
   void initState() {
     super.initState();
     if (widget.task != null) {
       _populateFields();
+    } else {
+      // Set default project if available
+      final projectsController = Get.find<ProjectsController>();
+      if (projectsController.filteredProjects.isNotEmpty) {
+        _selectedProjectId = projectsController.filteredProjects.first.id;
+      }
     }
   }
 
@@ -45,11 +47,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _tagsController.text = task.tags.join(', ');
     _selectedStatus = task.status;
     _selectedPriority = task.priority;
-    _selectedProjectId = task.projectId;
     _selectedDueDate = task.dueDate;
-    
-    // Initialize slider value
-    _estimatedHours = task.estimatedHours?.toDouble() ?? 1.0;
+    _selectedProjectId = task.projectId;
   }
 
   @override
@@ -63,209 +62,457 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.task == null ? 'New Task' : 'Edit Task'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         actions: [
           if (widget.task != null)
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline),
               onPressed: _deleteTask,
             ),
         ],
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description *',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Status
-              DropdownButtonFormField<TaskStatus>(
-                value: _selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: TaskStatus.values.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(_getStatusLabel(status)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedStatus = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Priority
-              DropdownButtonFormField<TaskPriority>(
-                value: _selectedPriority,
-                decoration: const InputDecoration(
-                  labelText: 'Priority',
-                  border: OutlineInputBorder(),
-                ),
-                items: TaskPriority.values.map((priority) {
-                  return DropdownMenuItem(
-                    value: priority,
-                    child: Text(_getPriorityLabel(priority)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedPriority = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Project
-              Obx(() {
-                final projects = Get.find<ProjectsController>().projects;
-                return DropdownButtonFormField<String>(
-                  value: _selectedProjectId,
-                  decoration: const InputDecoration(
-                    labelText: 'Project',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('No Project'),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Basic Information Section
+                    _buildSectionHeader('Basic Information', Icons.task_outlined),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _titleController,
+                      label: 'Task Title',
+                      hint: 'Enter a clear and descriptive task title',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a title';
+                        }
+                        return null;
+                      },
                     ),
-                    ...projects.map((project) {
-                      return DropdownMenuItem<String>(
-                        value: project.id,
-                        child: Text(project.title),
-                      );
-                    }),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedProjectId = value;
-                    });
-                  },
-                );
-              }),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      hint: 'Describe what needs to be done and any important details',
+                      maxLines: 4,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _buildProjectDropdown(),
+                    const SizedBox(height: 32),
 
-              // Due Date
-              InkWell(
-                onTap: _selectDueDate,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Due Date',
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
+                    // Task Details Section
+                    _buildSectionHeader('Task Details', Icons.settings_outlined),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdown<TaskStatus>(
+                            value: _selectedStatus,
+                            label: 'Status',
+                            items: TaskStatus.values,
+                            itemBuilder: (status) => _getStatusLabel(status),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedStatus = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildDropdown<TaskPriority>(
+                            value: _selectedPriority,
+                            label: 'Priority',
+                            items: TaskPriority.values,
+                            itemBuilder: (priority) => _getPriorityLabel(priority),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPriority = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildDateField(),
+                    const SizedBox(height: 32),
+
+                    // Additional Information Section
+                    _buildSectionHeader('Additional Information', Icons.info_outline),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _tagsController,
+                      label: 'Tags',
+                      hint: 'Enter tags separated by commas (e.g., urgent, frontend, bug)',
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom Save Button
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    width: 1,
                   ),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveTask,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    disabledBackgroundColor: Theme.of(context).primaryColor.withOpacity(0.6),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          widget.task == null ? 'Create Task' : 'Update Task',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: Theme.of(context).primaryColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required T value,
+    required String label,
+    required List<T> items,
+    required String Function(T) itemBuilder,
+    required void Function(T?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<T>(
+          value: value,
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(itemBuilder(item)),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Due Date',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _selectDueDate,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
                   child: Text(
                     _selectedDueDate != null
                         ? '${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}'
                         : 'Select due date',
                     style: _selectedDueDate != null
-                        ? null
-                        : TextStyle(color: Colors.grey[600]),
+                        ? Theme.of(context).textTheme.bodyLarge
+                        : Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Estimated Hours Slider
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                      Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                  ),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  size: 20,
                 ),
-                child: _buildTaskSlider(
-                  'Estimated Hours',
-                  _estimatedHours,
-                  1.0,
-                  40.0,
-                  Icons.schedule,
-                  Colors.purple,
-                  (value) => setState(() => _estimatedHours = value),
-                  suffix: 'h',
-                  displayValue: _estimatedHours.round().toString(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Tags
-              TextFormField(
-                controller: _tagsController,
-                decoration: const InputDecoration(
-                  labelText: 'Tags',
-                  border: OutlineInputBorder(),
-                  helperText: 'Separate tags with commas',
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveTask,
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : Text(widget.task == null ? 'Create Task' : 'Update Task'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildProjectDropdown() {
+    final projectsController = Get.find<ProjectsController>();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Project',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Obx(() {
+          final projects = projectsController.filteredProjects;
+          
+          if (projects.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+              child: Text(
+                'No projects available',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            );
+          }
+          
+          return DropdownButtonFormField<String>(
+            value: _selectedProjectId,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            items: projects.map((project) {
+              return DropdownMenuItem<String>(
+                value: project.id,
+                child: Text(
+                  project.title,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedProjectId = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select a project';
+              }
+              return null;
+            },
+          );
+        }),
+      ],
     );
   }
 
@@ -275,10 +522,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         return 'To Do';
       case TaskStatus.inProgress:
         return 'In Progress';
-      case TaskStatus.done:
-        return 'Done';
       case TaskStatus.testing:
         return 'Testing';
+      case TaskStatus.done:
+        return 'Done';
       case TaskStatus.blocked:
         return 'Blocked';
     }
@@ -295,71 +542,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       case TaskPriority.urgent:
         return 'Urgent';
     }
-  }
-
-  Widget _buildTaskSlider(
-    String label,
-    double value,
-    double min,
-    double max,
-    IconData icon,
-    Color color,
-    ValueChanged<double> onChanged, {
-    String suffix = '',
-    String? displayValue,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.3)),
-              ),
-              child: Text(
-                '${displayValue ?? value.round()}$suffix',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: color,
-            inactiveTrackColor: color.withOpacity(0.3),
-            thumbColor: color,
-            overlayColor: color.withOpacity(0.2),
-            trackHeight: 6,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: (max - min).round(),
-            onChanged: onChanged,
-          ),
-        ),
-      ],
-    );
   }
 
   void _selectDueDate() async {
@@ -393,33 +575,16 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           .where((tag) => tag.isNotEmpty)
           .toList();
 
-      final estimatedHours = _estimatedHours.round();
-
       if (widget.task == null) {
         // Create new task
-        if (_selectedProjectId == null) {
-          Get.snackbar(
-            'Error',
-            'Please select a project',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-        
         final task = Task(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
+          projectId: _selectedProjectId!,
           status: _selectedStatus,
           priority: _selectedPriority,
-          projectId: _selectedProjectId!,
-          dueDate: _selectedDueDate,
-          estimatedHours: estimatedHours,
           tags: tags,
+          dueDate: _selectedDueDate,
         );
 
         await Get.find<TasksController>().addTask(task);
@@ -431,29 +596,14 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         );
       } else {
         // Update existing task
-        if (_selectedProjectId == null) {
-          Get.snackbar(
-            'Error',
-            'Please select a project',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-        
         final updatedTask = widget.task!.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
+          projectId: _selectedProjectId,
           status: _selectedStatus,
           priority: _selectedPriority,
-          projectId: _selectedProjectId!,
-          dueDate: _selectedDueDate,
-          estimatedHours: estimatedHours,
           tags: tags,
+          dueDate: _selectedDueDate,
         );
 
         await Get.find<TasksController>().updateTask(updatedTask);

@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Color Palette based on README requirements
-  static const Color primaryBlue = Color(0xFF1E3A8A);
+  // Color Palette based on README requirements - Enhanced for better contrast
+  static const Color primaryBlue = Color(0xFF3B82F6); // Brighter blue for better visibility
   static const Color secondaryGreen = Color(0xFF10B981);
   static const Color accentAmber = Color(0xFFF59E0B);
-  static const Color backgroundDark = Color(0xFF111827);
-  static const Color surfaceGray = Color(0xFF1F2937);
-  static const Color cardGray = Color(0xFF374151);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFD1D5DB);
-  static const Color textMuted = Color(0xFF9CA3AF);
+  
+  // Dark Theme Colors
+  static const Color backgroundDark = Color(0xFF0F172A); // Darker background for better contrast
+  static const Color surfaceGray = Color(0xFF1E293B); // Slightly lighter surface
+  static const Color cardGray = Color(0xFF334155); // Lighter card background
+  static const Color textPrimary = Color(0xFFF8FAFC); // Slightly off-white for softer contrast
+  static const Color textSecondary = Color(0xFFE2E8F0); // Much brighter secondary text
+  static const Color textMuted = Color(0xFFCBD5E1); // Brighter muted text for better readability
+  
+  // Light Theme Colors
+  static const Color backgroundLight = Color(0xFFFAFAFA); // Light gray background
+  static const Color surfaceLight = Color(0xFFFFFFFF); // Pure white surface
+  static const Color cardLight = Color(0xFFFFFFFF); // White card background
+  static const Color textPrimaryLight = Color(0xFF1F2937); // Dark gray text
+  static const Color textSecondaryLight = Color(0xFF4B5563); // Medium gray text
+  static const Color textMutedLight = Color(0xFF6B7280); // Light gray text
   
   // Priority Colors
   static const Color priorityHigh = Color(0xFFEF4444);
@@ -150,7 +160,7 @@ class AppTheme {
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceGray,
         selectedItemColor: primaryBlue,
-        unselectedItemColor: textMuted,
+        unselectedItemColor: textSecondary, // Better contrast for unselected items
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
@@ -201,6 +211,189 @@ class AppTheme {
         ),
         labelStyle: GoogleFonts.inter(
           color: textSecondary,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: primaryBlue,
+      scaffoldBackgroundColor: backgroundLight,
+      colorScheme: const ColorScheme.light(
+        primary: primaryBlue,
+        secondary: secondaryGreen,
+        tertiary: accentAmber,
+        surface: surfaceLight,
+        background: backgroundLight,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: textPrimaryLight,
+        onBackground: textPrimaryLight,
+      ),
+      
+      // Typography using Inter font
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.light().textTheme.copyWith(
+          displayLarge: GoogleFonts.inter(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: textPrimaryLight,
+          ),
+          displayMedium: GoogleFonts.inter(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: textPrimaryLight,
+          ),
+          displaySmall: GoogleFonts.inter(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: textPrimaryLight,
+          ),
+          headlineLarge: GoogleFonts.inter(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: textPrimaryLight,
+          ),
+          headlineMedium: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: textPrimaryLight,
+          ),
+          headlineSmall: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: textPrimaryLight,
+          ),
+          titleLarge: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: textPrimaryLight,
+          ),
+          titleMedium: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: textPrimaryLight,
+          ),
+          titleSmall: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: textSecondaryLight,
+          ),
+          bodyLarge: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.normal,
+            color: textPrimaryLight,
+          ),
+          bodyMedium: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
+            color: textSecondaryLight,
+          ),
+          bodySmall: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            color: textMutedLight,
+          ),
+          labelLarge: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: textPrimaryLight,
+          ),
+          labelMedium: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: textSecondaryLight,
+          ),
+          labelSmall: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: textMutedLight,
+          ),
+        ),
+      ),
+      
+      // Card Theme
+      cardTheme: CardThemeData(
+        color: cardLight,
+        elevation: 2,
+        shadowColor: Colors.black12,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      
+      // AppBar Theme
+      appBarTheme: AppBarTheme(
+        backgroundColor: backgroundLight,
+        foregroundColor: textPrimaryLight,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimaryLight,
+        ),
+      ),
+      
+      // Bottom Navigation Theme
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: surfaceLight,
+        selectedItemColor: primaryBlue,
+        unselectedItemColor: textSecondaryLight,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      
+      // Floating Action Button Theme
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 6,
+      ),
+      
+      // Elevated Button Theme
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryBlue,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      
+      // Input Decoration Theme
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF9FAFB),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryBlue, width: 2),
+        ),
+        hintStyle: GoogleFonts.inter(
+          color: textMutedLight,
+          fontSize: 14,
+        ),
+        labelStyle: GoogleFonts.inter(
+          color: textSecondaryLight,
           fontSize: 14,
         ),
       ),

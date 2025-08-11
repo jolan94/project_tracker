@@ -19,6 +19,13 @@ class ProjectsController extends GetxController {
   final RxBool _isLoading = false.obs;
   final RxString _sortBy = 'createdAt'.obs;
   final RxBool _sortAscending = false.obs;
+  
+  // Filter/Sort state for widget
+  final RxMap<String, dynamic> _currentFilters = <String, dynamic>{}.obs;
+  final RxMap<String, dynamic> _currentSort = <String, dynamic>{
+    'field': 'createdAt',
+    'direction': 'desc'
+  }.obs;
 
   // Getters
   List<Project> get projects => _projects;
@@ -29,6 +36,8 @@ class ProjectsController extends GetxController {
   bool get isLoading => _isLoading.value;
   String get sortBy => _sortBy.value;
   bool get sortAscending => _sortAscending.value;
+  Map<String, dynamic> get currentFilters => _currentFilters;
+  Map<String, dynamic> get currentSort => _currentSort;
 
   @override
   void onInit() {
@@ -291,5 +300,26 @@ class ProjectsController extends GetxController {
     } catch (e) {
       return null;
     }
+  }
+  
+  void updateFiltersAndSort(Map<String, dynamic> data) {
+    final filters = data['filters'] as Map<String, dynamic>? ?? {};
+    final sort = data['sort'] as Map<String, dynamic>? ?? {};
+    
+    _currentFilters.assignAll(filters);
+    _currentSort.assignAll(sort);
+    
+    // Update individual filter values
+    _statusFilter.value = filters['status'];
+    
+    // Update sort values
+    _sortBy.value = sort['field'] ?? 'createdAt';
+    _sortAscending.value = sort['direction'] == 'asc';
+    
+    _applyFilters();
+  }
+  
+  void showFilterDialog() {
+    // This will be called from the UI to show the filter dialog
   }
 }
