@@ -67,11 +67,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   }
 
   void _startTimer() {
-    if (_isPaused) {
-      _resumeTimer();
-      return;
-    }
-
     setState(() {
       _isRunning = true;
       _isPaused = false;
@@ -107,6 +102,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   void _resumeTimer() {
     setState(() {
       _isPaused = false;
+      _isRunning = true;
     });
 
     _timerAnimationController.repeat();
@@ -452,17 +448,55 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       ),
                       child: Column(
                         children: [
-                          // Timer Circle
-                          AnimatedBuilder(
-                            animation: _isRunning
-                                ? _pulseAnimation
-                                : _timerAnimationController,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _isRunning ? _pulseAnimation.value : 1.0,
-                                child: Container(
+                          // Timer Circle with Progress
+                          SizedBox(
+                            width: 240,
+                            height: 240,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Background Circle
+                                Container(
                                   width: 200,
                                   height: 200,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Theme.of(context).colorScheme.surface,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Progress Indicator
+                                if (_isRunning)
+                                  SizedBox(
+                                    width: 220,
+                                    height: 220,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 8,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        _isOnBreak
+                                            ? Colors.orange
+                                            : Theme.of(context).colorScheme.primary,
+                                      ),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withOpacity(0.2),
+                                    ),
+                                  ),
+                                // Timer Content
+                                Container(
+                                  width: 160,
+                                  height: 160,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(
@@ -473,71 +507,91 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                                     Colors.orange.shade600,
                                                   ]
                                                 : [
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
+                                                    Theme.of(context).colorScheme.primary,
                                                     Theme.of(context)
                                                         .colorScheme
                                                         .primary
-                                                        .withOpacity(0.7),
+                                                        .withOpacity(0.8),
                                                   ]
                                           : [
-                                              Colors.grey.shade400,
-                                              Colors.grey.shade600,
+                                              Theme.of(context).colorScheme.surfaceVariant,
+                                              Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.8),
                                             ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color:
-                                            (_isRunning
-                                                    ? _isOnBreak
-                                                          ? Colors.orange
-                                                          : Theme.of(context)
-                                                                .colorScheme
-                                                                .primary
-                                                    : Colors.grey)
-                                                .withOpacity(0.3),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
+                                        color: (_isRunning
+                                                ? _isOnBreak
+                                                    ? Colors.orange
+                                                    : Theme.of(context).colorScheme.primary
+                                                : Theme.of(context).colorScheme.surfaceVariant)
+                                            .withOpacity(0.4),
+                                        blurRadius: 15,
+                                        spreadRadius: 1,
                                       ),
                                     ],
                                   ),
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Text(
-                                          _isOnBreak ? 'BREAK' : 'WORK',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 2,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            _isOnBreak ? 'BREAK' : 'WORK',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.5,
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 12),
                                         Text(
                                           _formatDuration(
-                                            _isOnBreak
-                                                ? _breakTime
-                                                : _elapsedTime,
+                                            _isOnBreak ? _breakTime : _elapsedTime,
                                           ),
                                           style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w800,
                                             fontFamily: 'monospace',
+                                            letterSpacing: 1,
                                           ),
                                         ),
+                                        if (_isRunning && !_isPaused)
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 8),
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.white.withOpacity(0.5),
+                                                  blurRadius: 4,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: 32),
@@ -548,11 +602,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                             children: [
                               // Start/Pause/Resume Button
                               ElevatedButton(
-                                onPressed: _isRunning
-                                    ? _pauseTimer
-                                    : _startTimer,
+                                onPressed: () {
+                                  if (!_isRunning) {
+                                    _startTimer();
+                                  } else if (_isPaused) {
+                                    _resumeTimer();
+                                  } else {
+                                    _pauseTimer();
+                                  }
+                                },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _isRunning
+                                  backgroundColor: _isRunning && !_isPaused
                                       ? Colors.orange
                                       : Theme.of(context).colorScheme.primary,
                                   foregroundColor: Colors.white,
@@ -568,20 +628,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      _isRunning
-                                          ? _isPaused
-                                                ? Icons.play_arrow_rounded
-                                                : Icons.pause_rounded
-                                          : Icons.play_arrow_rounded,
+                                      !_isRunning || _isPaused
+                                          ? Icons.play_arrow_rounded
+                                          : Icons.pause_rounded,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _isRunning
-                                          ? _isPaused
-                                                ? 'Resume'
-                                                : 'Pause'
-                                          : 'Start',
+                                      !_isRunning
+                                          ? 'Start'
+                                          : _isPaused
+                                              ? 'Resume'
+                                              : 'Pause',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -686,36 +744,90 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     if (_workSessions.isNotEmpty || _breaks.isNotEmpty)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1A1A1A)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF1E1E1E),
+                                    const Color(0xFF2A2A2A),
+                                  ]
+                                : [
+                                    Colors.white,
+                                    const Color(0xFFFAFAFA),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.black.withOpacity(0.05),
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(
-                                isDark ? 0.3 : 0.08,
+                                isDark ? 0.4 : 0.1,
                               ),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                              spreadRadius: 0,
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(
+                                isDark ? 0.2 : 0.05,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                              spreadRadius: 0,
                             ),
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Session Summary',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
+                                  child: Icon(
+                                    Icons.analytics_rounded,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Session Summary',
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Track your productivity',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 24),
                             Row(
                               children: [
                                 Expanded(
@@ -726,7 +838,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                     Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: _buildSummaryItem(
                                     'Breaks Taken',
@@ -737,7 +849,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             _buildSummaryItem(
                               'Total Time',
                               _formatDuration(_elapsedTime),
@@ -765,34 +877,70 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.08),
+            color.withOpacity(0.12),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             label,
             style: TextStyle(
-              color: color,
-              fontSize: 12,
+              color: isDark
+                  ? Colors.white.withOpacity(0.7)
+                  : Colors.black.withOpacity(0.6),
+              fontSize: 13,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

@@ -554,6 +554,9 @@ class _IdeaFormScreenState extends State<IdeaFormScreen> {
           feasibility: feasibility,
           notes: notes,
         );
+        
+        // Calculate validation score
+        idea.updateValidationScore();
 
         await Get.find<IdeasController>().addIdea(idea);
         Get.back();
@@ -575,6 +578,9 @@ class _IdeaFormScreenState extends State<IdeaFormScreen> {
           feasibility: feasibility,
           notes: notes,
         );
+        
+        // Calculate validation score
+        updatedIdea.updateValidationScore();
 
         await Get.find<IdeasController>().updateIdea(updatedIdea);
         Get.back();

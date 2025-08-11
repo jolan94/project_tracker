@@ -284,11 +284,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Divider(color: Theme.of(Get.context!).colorScheme.outline.withOpacity(0.3)),
           Obx(() => _buildSwitchTile(
-            _themeController.themeName,
+            'Dark Theme',
             'Switch between light and dark theme',
-            _themeController.themeIcon,
+            Icons.dark_mode,
             _themeController.isDarkMode,
-            (value) => _themeController.toggleTheme(),
+            (value) {
+              if (value) {
+                _themeController.setDarkTheme();
+              } else {
+                _themeController.setLightTheme();
+              }
+            },
           )),
           Divider(color: Theme.of(Get.context!).colorScheme.outline.withOpacity(0.3)),
           _buildSwitchTile(
@@ -379,30 +385,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        icon,
-        color: Theme.of(Get.context!).colorScheme.primary,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Theme.of(Get.context!).colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
-          fontSize: 12,
-        ),
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: Theme.of(Get.context!).colorScheme.primary,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(Get.context!).colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Theme.of(Get.context!).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Transform.scale(
+            scale: 1.2,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Theme.of(Get.context!).colorScheme.primary,
+              activeTrackColor: Theme.of(Get.context!).colorScheme.primary.withOpacity(0.3),
+              inactiveThumbColor: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.5),
+              inactiveTrackColor: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.2),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -414,54 +449,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback onTap, {
     bool isDestructive = false,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : Theme.of(Get.context!).colorScheme.primary,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive ? Colors.red : Theme.of(Get.context!).colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
-          fontSize: 12,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
-      ),
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDestructive 
+                    ? Colors.red.withOpacity(0.1)
+                    : Theme.of(Get.context!).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive ? Colors.red : Theme.of(Get.context!).colorScheme.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDestructive ? Colors.red : Theme.of(Get.context!).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.5),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildInfoTile(String title, String value, IconData icon) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        icon,
-        color: Theme.of(Get.context!).colorScheme.primary,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Theme.of(Get.context!).colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      trailing: Text(
-        value,
-        style: TextStyle(
-          color: Theme.of(Get.context!).colorScheme.onSurface.withOpacity(0.7),
-          fontSize: 14,
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(Get.context!).colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Theme.of(Get.context!).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).colorScheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Theme.of(Get.context!).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
